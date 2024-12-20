@@ -33,25 +33,31 @@ async function generateEmbedding(text) {
 
 // Store memory endpoint
 app.post('/store-memory', async (req, res) => {
+    console.log('Request received at /store-memory:', req.body);
+
     try {
         const { messageId, text } = req.body;
-
         if (!messageId || !text) {
+            console.log('Bad request: Missing messageId or text');
             return res.status(400).json({ error: 'messageId and text are required.' });
         }
 
+        console.log('Generating embedding for text:', text);
         const embedding = await generateEmbedding(text);
 
-        await index.namespace('ai-friend').upsert([
+        console.log('Storing embedding in Pinecone:', embedding);
+        await index.namespace('default').upsert([
             { id: messageId, values: embedding, metadata: { text } },
         ]);
 
+        console.log('Memory stored successfully for messageId:', messageId);
         res.send('Memory stored.');
     } catch (error) {
         console.error('Error storing memory:', error.message);
         res.status(500).json({ error: 'Failed to store memory.' });
     }
 });
+
 
 // Retrieve memory endpoint
 app.post('/retrieve-memory', async (req, res) => {
