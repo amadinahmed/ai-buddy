@@ -2,10 +2,12 @@ import express from 'express';
 import { Pinecone } from '@pinecone-database/pinecone';
 import axios from 'axios';
 import dotenv from 'dotenv';
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Initialize Pinecone
@@ -83,6 +85,10 @@ app.post('/retrieve-memory', async (req, res) => {
         console.error('Error retrieving memory:', error.message);
         res.status(500).json({ error: 'Failed to retrieve memory.' });
     }
+});
+
+app.get('/health', (req, res) => {
+    res.send('Server is healthy');
 });
 
 // Start the server
