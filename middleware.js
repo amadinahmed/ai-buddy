@@ -1,8 +1,8 @@
 import express from 'express';
-import { Pinecone } from '@pinecone-database/pinecone';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { Pinecone } from '@pinecone-database/pinecone';
 
 dotenv.config();
 
@@ -20,12 +20,16 @@ const index = pinecone.index(process.env.PINECONE_INDEX_NAME);
 // Function to generate embeddings using OpenAI
 async function generateEmbedding(text) {
     try {
-        const response = await axios.post('https://api.openai.com/v1/embeddings', {
-            input: text,
-            model: 'text-embedding-ada-002',
-        }, {
-            headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-        });
+        const response = await axios.post(
+            'https://api.openai.com/v1/embeddings',
+            {
+                input: text,
+                model: 'text-embedding-ada-002',
+            },
+            {
+                headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+            }
+        );
         return response.data.data[0].embedding;
     } catch (error) {
         console.error('Error generating embedding:', error.message);
@@ -33,26 +37,21 @@ async function generateEmbedding(text) {
     }
 }
 
-// Store memory endpoint
+// Endpoint to store memory
 app.post('/store-memory', async (req, res) => {
-    console.log('Request received at /store-memory:', req.body);
-
     try {
         const { messageId, text } = req.body;
+
         if (!messageId || !text) {
-            console.log('Bad request: Missing messageId or text');
             return res.status(400).json({ error: 'messageId and text are required.' });
         }
 
-        console.log('Generating embedding for text:', text);
         const embedding = await generateEmbedding(text);
 
-        console.log('Storing embedding in Pinecone:', embedding);
         await index.namespace('default').upsert([
             { id: messageId, values: embedding, metadata: { text } },
         ]);
 
-        console.log('Memory stored successfully for messageId:', messageId);
         res.send('Memory stored.');
     } catch (error) {
         console.error('Error storing memory:', error.message);
@@ -60,26 +59,23 @@ app.post('/store-memory', async (req, res) => {
     }
 });
 
-
-// Retrieve memory endpoint
+// Endpoint to retrieve memory
 app.post('/retrieve-memory', async (req, res) => {
     try {
-        const { queryText } = req.body;
+        const { queryEmbedding } = req.body;
 
-        if (!queryText) {
-            return res.status(400).json({ error: 'queryText is required.' });
+        if (!queryEmbedding || !Array.isArray(queryEmbedding)) {
+            return res.status(400).json({ error: 'queryEmbedding must be an array.' });
         }
 
-        const queryEmbedding = await generateEmbedding(queryText);
-
-        const response = await index.namespace('ai-friend').query({
+        const response = await index.namespace('default').query({
             topK: 5,
             vector: queryEmbedding,
-            includeValues: false,
+            includeValues: true,
             includeMetadata: true,
         });
 
-        const retrievedTexts = response.matches.map(match => match.metadata.text);
+        const retrievedTexts = response.matches.map((match) => match.metadata.text);
         res.json(retrievedTexts);
     } catch (error) {
         console.error('Error retrieving memory:', error.message);
@@ -87,12 +83,13 @@ app.post('/retrieve-memory', async (req, res) => {
     }
 });
 
+// Health Check
 app.get('/health', (req, res) => {
-    res.send('Server is healthy');
+    res.send('Server is running.');
 });
 
 // Start the server
-const PORT = process.env.PORT || 8082;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -1,21 +1,16 @@
 {
   "name": "ai-buddy",
   "version": "1.0.0",
-  "description": "",
   "main": "middleware.js",
   "scripts": {
-    "start": "node middleware.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node middleware.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@pinecone-database/pinecone": "^4.0.0",
     "axios": "^1.7.9",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
-  }
+    "express": "^4.21.2",
+    "cors": "^2.8.5"
+  },
+  "type": "module"
 }
